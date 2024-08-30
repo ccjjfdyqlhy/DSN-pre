@@ -53,7 +53,7 @@
    pip install -r requirements.txt
    ```
 5、**下载并配置TTS模型资源：**
-   * 从[这里]()下载TTS模型包到 `TTS_models` 文件夹。你可以把该文件夹当作样板，使用自己训练的GPT-SoVITS模型进行TTS推理。
+   * 从[这里](https://github.com/ccjjfdyqlhy/DSN-pre/releases)下载TTS模型包到 `TTS_models` 文件夹。你可以把该文件夹当作样板，使用自己训练的GPT-SoVITS模型进行TTS推理。
    * 在 `config-ui.py` 中设定使用的模型文件夹路径和使用的模型。
 
 **3. 配置：**
