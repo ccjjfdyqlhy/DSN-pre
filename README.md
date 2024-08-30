@@ -1,6 +1,6 @@
 ## DSN: Deep Streaming Neural Networks-based Control System Framework
 
-[English](https://github.com/ccjjfdyqlhy/DSN-pre/blob/main/README.md) | **简体中文**  
+**English** | [简体中文](https://github.com/ccjjfdyqlhy/DSN-pre/blob/main/README_zh-CN.md)  
 
 **DSN** is a powerful and innovative interactive prompting framework that combines the power of large language models and deep learning to create truly intelligent and engaging conversational experiences. 
 **This repository is currently an early preview branch of the project and will be synced with the core branch on 2024/8/30.**
