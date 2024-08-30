@@ -53,7 +53,7 @@ You can download the packaged Python runtime from [here](https://github.com/ccjj
    pip install -r requirements.txt
    ```
 5. **Download and configure TTS model resources:**
-   * Download the TTS model package from [here]() to the `TTS_models` folder. You can use this folder as a template and use your own trained GPT-SoVITS model for TTS inference.
+   * Download the TTS model package from [here](https://github.com/ccjjfdyqlhy/DSN-pre/releases) to the `TTS_models` folder. You can use this folder as a template and use your own trained GPT-SoVITS model for TTS inference.
    * Set the used model folder path and the used model in `config-ui.py`. 
 
 **3. Configuration:**
