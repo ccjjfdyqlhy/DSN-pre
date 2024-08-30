@@ -2,7 +2,7 @@
 
 [English](https://github.com/ccjjfdyqlhy/DSN-pre/blob/main/README.md) | **简体中文**  
 
-**DSN** 是一个强大且创新的交互式提示框架，它结合了大语言模型和深度学习的能力，创造出真正智能且引人入胜的对话体验。  
+**DSN** 是一个强大且创新的交互式提示框架，它结合了大模型和计算机实用程序的能力，创造出真正智能且引人入胜的对话控制体验。  
 **当前仓库是本项目的早期预览分支，在2024/8/30与核心分支同步。**
 
 **DSN 可以：**
@@ -35,7 +35,10 @@
 **1. 先决条件：**  
 * **Python 3.11+：** 从 [官方网站](https://www.python.org/)安装 Python（建议使用 3.11.2）。
 * **Google Cloud Platform API 密钥（用于在线模型访问）：** 你可以在[此处](https://aistudio.google.com/app/apikey)获取免费试用 API 密钥。
-* **Everything 搜索引擎（用于文件搜索）：** 从他们的 [网站](https://www.voidtools.com/downloads) 下载完整版本，然后将其安装在此克隆存储库的“binaries”文件夹中。
+* **Everything 搜索引擎（用于文件搜索）：** 从他们的 [网站](https://www.voidtools.com/downloads) 下载完整版本，然后将其安装在此克隆存储库的 `binaries` 文件夹中。
+* **Paraformer-zh（用于语音识别）：** 从 [Modelscope](https://www.modelscope.cn/models/iic/speech_paraformer-large-vad-punc_asr_nat-zh-cn-16k-common-vocab8404-pytorch/files) 或 [HuggingFace](https://huggingface.co/funasr/paraformer-zh) 下载到 `instances\\paraformer` 文件夹中。  
+* **Moondream（用于本地图像识别）：** [HuggingFace](https://huggingface.co/vikhyatk/moondream2) 下载到 `instances\\moondream` 文件夹中。
+* **已经构建好的ChatTTS（另外一种TTS解决方案）：** 正在适配中，将来支持
 
 **2. 安装：**
 
