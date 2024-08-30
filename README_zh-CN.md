@@ -30,7 +30,7 @@
 
 ## 马上开始：
 
-你可以从[这里](https://github.com/ccjjfdyqlhy/DSN-pre/releases)下载构建版本，或按照以下步骤自行构建：
+你可以从[这里](https://github.com/ccjjfdyqlhy/DSN-pre/releases)下载打包好的Python运行时，或者你也可以自行安装依赖库。
 
 **1. 先决条件：**  
 * **Python 3.11+：** 从 [官方网站](https://www.python.org/)安装 Python（建议使用 3.11.2）。
@@ -52,6 +52,9 @@
    ```bash
    pip install -r requirements.txt
    ```
+5、**下载并配置TTS模型资源：**
+   * 从[这里]()下载TTS模型包到 `TTS_models` 文件夹。你可以把该文件夹当作样板，使用自己训练的GPT-SoVITS模型进行TTS推理。
+   * 在 `config-ui.py` 中设定使用的模型文件夹路径和使用的模型。
 
 **3. 配置：**
 
