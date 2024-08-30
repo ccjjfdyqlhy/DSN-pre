@@ -30,7 +30,7 @@
 
 ## Getting Started:
 
-You can download the build version from [here](), or build it yourself by following these steps:
+You can download the build version from [here](https://github.com/ccjjfdyqlhy/DSN-pre/releases), or build it yourself by following these steps:
 
 **1. Prerequisites:**
 * **Python 3.11+:** Install Python (3.11.2 recommended) from the [official website](https://www.python.org/).
