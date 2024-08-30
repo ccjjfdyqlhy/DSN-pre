@@ -1,0 +1,4 @@
+instances/DSN-vocal/GPT_SoVITS/pretrained_models/chinese-hubert-base/pytorch_model.bin filter=lfs diff=lfs merge=lfs -text
+instances/DSN-vocal/GPT_SoVITS/pretrained_models/s1bert25hz-2kh-longer-epoch=68e-step=50232.ckpt filter=lfs diff=lfs merge=lfs -text
+instances/DSN-vocal/GPT_SoVITS/pretrained_models/s2G488k.pth filter=lfs diff=lfs merge=lfs -text
+instances/DSN-vocal/GPT_SoVITS/pretrained_models/chinese-roberta-wwm-ext-large/pytorch_model.bin filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,7 @@
+WARNING: INSTALL THIS BEFORE REQUIREMENTS they are related to your CUDA driver
+警告：请在安装requirements.txt之前安装以下内容。它们和你显卡的CUDA驱动版本有关。
+
+torch：https://pytorch.org/get-started/locally/
+
+llama-cpp-python：https://github.com/abetlen/llama-cpp-python/releases
+
