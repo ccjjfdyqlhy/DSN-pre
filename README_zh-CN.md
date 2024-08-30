@@ -30,7 +30,7 @@
 
 ## 马上开始：
 
-你可以从[这里]()下载构建版本，或按照以下步骤自行构建：
+你可以从[这里](https://github.com/ccjjfdyqlhy/DSN-pre/releases)下载构建版本，或按照以下步骤自行构建：
 
 **1. 先决条件：**  
 * **Python 3.11+：** 从 [官方网站](https://www.python.org/)安装 Python（建议使用 3.11.2）。
