@@ -1,18 +1,26 @@
 
 # DSN main
-# update 240830
+# update 241115
 
 from utils import *
 
+generation_config = {
+  "temperature": 1,
+  "top_p": 0.95,
+  "top_k": 64,
+  "max_output_tokens": 8192,
+  "response_mime_type": "text/plain",
+}
 
 play_audio = False # Filter API reference
-ver = 'Rev2_0.9.8'
-BUILDNUM = 240830
+ver = 'Rev2_1.1.2'
+BUILDNUM = 241115
 cwd = os.getcwd()
 platform = sys.platform
 timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 use_device = 'camera'
 building = False
+first_login = False
 skip_wait = False
 global result
 splits = ["，", "。", "？", "！", ",", ".", "?", "!", "~", ":", "：", "—", "…"]
@@ -34,7 +42,7 @@ def send(chat=None,msgcontent='') -> str:
 def decrypt(prompt):
     return llm.detokenize(prompt).decode('utf-8')
 
-def get_voice(refer_wav,refer_text,prompt_language,text):
+def get_voice(refer_wav,refer_text,prompt_language,text,filename=cwd+'\\TEMP\\latest_generated.wav'):
     headers = {'Content-Type': 'application/json'}
     data = {
         "refer_wav_path": refer_wav,
@@ -46,10 +54,10 @@ def get_voice(refer_wav,refer_text,prompt_language,text):
     response = requests.post('http://127.0.0.1:3826', headers=headers, json=data)
     if response.status_code == 200:
         wav_data = response.content
-        with open(cwd+'\\TEMP\\latest_generated.wav', 'wb') as f:
+        with open(filename, 'wb') as f:
             f.write(wav_data)
         if play_audio:
-            CHUNK=1024;wf=wave.open(cwd+'\\TEMP\\latest_generated.wav','rb');wav_data=wf.readframes(CHUNK);p = pyaudio.PyAudio();FORMAT=p.get_format_from_width(wf.getsampwidth());CHANNELS=wf.getnchannels();RATE=wf.getframerate();stream=p.open(format=FORMAT,channels=CHANNELS,rate=RATE,frames_per_buffer=CHUNK,output=True)
+            CHUNK=1024;wf=wave.open(filename,'rb');wav_data=wf.readframes(CHUNK);p = pyaudio.PyAudio();FORMAT=p.get_format_from_width(wf.getsampwidth());CHANNELS=wf.getnchannels();RATE=wf.getframerate();stream=p.open(format=FORMAT,channels=CHANNELS,rate=RATE,frames_per_buffer=CHUNK,output=True)
             while len(wav_data) > 0:
                 stream.write(wav_data)
                 wav_data = wf.readframes(CHUNK)
@@ -311,6 +319,13 @@ def handle_output(output,execute_layer=1):
                                                 prompt_language='zh',
                                                 text=sentence,
                                             )
+                                        elif TTS_MODEL_NAME == '行秋':
+                                            get_voice(
+                                                refer_wav=TTS_MODEL_PATH+r"/audios/emotion_templates/#calm2.wav",#TODO
+                                                refer_text="蒲公英子就像自然的宝石，汇聚着每年第一缕风。人们把它放进酒桶，就是把当下的风放了进去。",
+                                                prompt_language='zh',
+                                                text=sentence,
+                                            )
                                     elif LANG == 'English':
                                         get_voice(
                                             refer_wav=TTS_MODEL_PATH+r"/audios/Venti/test.wav",#TODO
@@ -350,13 +365,15 @@ def handle_output(output,execute_layer=1):
                 response = send(chat,'[控制系统返回] '+str(result))
                 handle_output(response, execute_layer)
 
-def init(silent=False):
+def init(silent=False,short=False,export=False):
     '''
     初始化控制系统。
     执行该操作将会连接所有节点的控制流，并部署每个节点上的生成式模型。
     
     Args:
-        silent (bool): 是否以静默模式（仅输出问题）运行。默认为 False。
+        silent (bool): 是否以静默模式（仅log问题）运行。
+        short (bool): 是否使用简短回答。
+        export (bool): 是否在启动时导出提示词到prompt.txt以供调试。
     '''
     global llm, history, chat, picmodel, tokenizer, agent_id, s2tmodel, PROMPT
     from prompt import STATUS, VISION_START1, VISION_START2, MAIN_PROMPT, PROMPT_LITE, BEGINNING_PROMPT, COMMAND_PROMPT, SEARCH_LOCAL_PROMPT, SEARCH_ONLINE_PROMPT, READ_FILE_PROMPT, VISION_PROMPT, p_PROTECT, p_MEMO, p_PLUGINS, p_ENDING
@@ -365,7 +382,7 @@ def init(silent=False):
         print('搜索服务未运行，正在启动。\n')
         start_everything()
     if USE_LOCAL:
-        if silent == False: print('正在初始化本地模型...')
+        if silent == False: print('正在加载本地存档点...')
         try:
             if LOCAL_SEED == 0:
                 llm = Llama(
@@ -385,20 +402,20 @@ def init(silent=False):
             elif sys.platform == 'linux':
                 os.system('clear')
         except:
-            print('本地模型初始化失败。请确保已经正确在'+cwd+'\\instances文件夹下安装了DSN-local.NT模型，python环境正常，以及配置文件无误。')
+            print('未找到本地存档点。请确保已经正确在'+cwd+'\\instances文件夹下安装了DSN-local.NT模型，python环境正常，以及配置文件无误。')
             exit()
-        if silent == False: print('本地部署完成。模型已就绪。')
+        if silent == False: print('存档点加载完成。模型已就绪。')
     else:
         llm = None
     try:
         genai.configure(api_key=GENAI_APIKEY,transport=GENAI_TRANSPORT_TYPE)
     except:
-        print('API初始化失败。请确保已经正确配置了API密钥。')
+        print('API连接失败。请确保已经正确配置了API密钥。')
         exit()
-    model = genai.GenerativeModel(model_name=SELECTED_MODEL)
+    model = genai.GenerativeModel(generation_config=generation_config,model_name=SELECTED_MODEL)
     history = []
     chat = model.start_chat(history=history)
-    if silent == False: print('API初始化完成。')
+    if silent == False: print('成功连接到第三方API。')
     if type(VISION_START1) == list:
         VISION_START1 = decrypt(VISION_START1)
         VISION_START2 = decrypt(VISION_START2)
@@ -410,9 +427,15 @@ def init(silent=False):
                 PROMPT = decrypt(PROMPT_LITE)
             else:
                 if ENABLE_PLUGINS:
-                    PROMPT=STATUS+decrypt(MAIN_PROMPT)+decrypt(COMMAND_PROMPT)+decrypt(SEARCH_LOCAL_PROMPT)+decrypt(SEARCH_ONLINE_PROMPT)+decrypt(READ_FILE_PROMPT)+decrypt(VISION_PROMPT)+decrypt(p_PROTECT)+decrypt(p_PLUGINS)
+                    if wechat_useable:
+                        PROMPT=STATUS+decrypt(MAIN_PROMPT)+decrypt(COMMAND_PROMPT)+decrypt(WECHAT_PROMPT)+decrypt(SEARCH_LOCAL_PROMPT)+decrypt(SEARCH_ONLINE_PROMPT)+decrypt(READ_FILE_PROMPT)+decrypt(VISION_PROMPT)+decrypt(p_PROTECT)+decrypt(p_PLUGINS)
+                    else:
+                        PROMPT=STATUS+decrypt(MAIN_PROMPT)+decrypt(COMMAND_PROMPT)+decrypt(SEARCH_LOCAL_PROMPT)+decrypt(SEARCH_ONLINE_PROMPT)+decrypt(READ_FILE_PROMPT)+decrypt(VISION_PROMPT)+decrypt(p_PROTECT)+decrypt(p_PLUGINS)
                 else:
-                    PROMPT=STATUS+decrypt(MAIN_PROMPT)+decrypt(COMMAND_PROMPT)+decrypt(SEARCH_LOCAL_PROMPT)+decrypt(SEARCH_ONLINE_PROMPT)+decrypt(READ_FILE_PROMPT)+decrypt(VISION_PROMPT)+decrypt(p_PROTECT)+decrypt(p_ENDING)
+                    if wechat_useable:
+                        PROMPT=STATUS+decrypt(MAIN_PROMPT)+decrypt(COMMAND_PROMPT)+decrypt(WECHAT_PROMPT)+decrypt(SEARCH_LOCAL_PROMPT)+decrypt(SEARCH_ONLINE_PROMPT)+decrypt(READ_FILE_PROMPT)+decrypt(VISION_PROMPT)+decrypt(p_PROTECT)+decrypt(p_ENDING)
+                    else:
+                        PROMPT=STATUS+decrypt(MAIN_PROMPT)+decrypt(COMMAND_PROMPT)+decrypt(SEARCH_LOCAL_PROMPT)+decrypt(SEARCH_ONLINE_PROMPT)+decrypt(READ_FILE_PROMPT)+decrypt(VISION_PROMPT)+decrypt(p_PROTECT)+decrypt(p_ENDING)
     else:
         if USE_CUSTOM_PROMPT:
             from custom_prompt import CUSTOM_PROMPT
@@ -422,15 +445,20 @@ def init(silent=False):
                 PROMPT = PROMPT_LITE
             else:
                 if ENABLE_PLUGINS:
-                    PROMPT=STATUS+MAIN_PROMPT+COMMAND_PROMPT+SEARCH_LOCAL_PROMPT+SEARCH_ONLINE_PROMPT+READ_FILE_PROMPT+VISION_PROMPT+p_PROTECT+p_PLUGINS
+                    if wechat_useable:
+                        PROMPT=STATUS+MAIN_PROMPT+COMMAND_PROMPT+WECHAT_PROMPT+SEARCH_LOCAL_PROMPT+SEARCH_ONLINE_PROMPT+READ_FILE_PROMPT+VISION_PROMPT+p_PROTECT+p_PLUGINS
+                    else:
+                        PROMPT=STATUS+MAIN_PROMPT+COMMAND_PROMPT+SEARCH_LOCAL_PROMPT+SEARCH_ONLINE_PROMPT+READ_FILE_PROMPT+VISION_PROMPT+p_PROTECT+p_PLUGINS
                 else:
-                    PROMPT=STATUS+MAIN_PROMPT+COMMAND_PROMPT+SEARCH_LOCAL_PROMPT+SEARCH_ONLINE_PROMPT+READ_FILE_PROMPT+VISION_PROMPT+p_PROTECT+p_ENDING
-
+                    if wechat_useable:
+                        PROMPT=STATUS+MAIN_PROMPT+COMMAND_PROMPT+WECHAT_PROMPT+SEARCH_LOCAL_PROMPT+SEARCH_ONLINE_PROMPT+READ_FILE_PROMPT+VISION_PROMPT+p_PROTECT+p_ENDING
+                    else:
+                        PROMPT=STATUS+MAIN_PROMPT+COMMAND_PROMPT+SEARCH_LOCAL_PROMPT+SEARCH_ONLINE_PROMPT+READ_FILE_PROMPT+VISION_PROMPT+p_PROTECT+p_ENDING
     if USE_MEMO:
         if os.path.exists('memo.txt'):
             with open('memo.txt', 'r', encoding='utf-8-sig') as f:
                 memo = f.read()
-                if silent               == False: print("备忘录已载入。")
+                if silent == False: print("备忘录已载入。")
         else:
             print("启用了备忘录，但是 memo.txt 不存在，创建新文件。")
             with open('memo.txt', 'w', encoding='utf-8-sig') as f:
@@ -439,13 +467,55 @@ def init(silent=False):
         if type(p_MEMO) == list:
             p_MEMO = decrypt(p_MEMO)
         PROMPT = PROMPT+p_MEMO+memo
+    if short:
+        print('后端作为 Dodo UI 核心框架启动，短输出模式开启。')
+        PROMPT += p_SHORT
+    if os.path.exists(cwd + '\\generated\\longterm_memory.txt'):
+        with open(cwd + "\\generated\\longterm_memory.txt", "r", encoding="utf-8-sig") as f:
+            memory = f.read()
+        memories = memory.split('[重启]')  # 按“重启”分割记忆
+        last_memory = memories[-2].strip()  # 获取最后一份记忆，并去除首尾空白字符
+        memories_dir = os.path.join(cwd, "generated", "memories")
+        if not os.path.exists(memories_dir):
+            os.makedirs(memories_dir)
+        existing_files = [f for f in os.listdir(memories_dir) if f.startswith("memory_") and f.endswith(".txt")]
+        used_indices = []
+        for file_name in existing_files:
+            try:
+                used_indices.append(int(file_name[7:-4]))  # 提取文件名中的数字
+            except ValueError:
+                pass
+        next_index = 0
+        while next_index in used_indices:
+            next_index += 1
+        for i, mem in enumerate(memories[:-1]):
+            filename = os.path.join(memories_dir, f"memory_{next_index + i}.txt")
+            with open(filename, "w", encoding="utf-8-sig") as f:
+                f.write(mem + "[重启]")
+        with open(cwd + "\\generated\\longterm_memory.txt", "w", encoding="utf-8-sig") as f:
+            f.write(last_memory)
+        if not (last_memory.endswith('[重启]') or last_memory.endswith('[重启]\n')):
+            with open(cwd + "\\generated\\longterm_memory.txt", "a", encoding="utf-8-sig") as f1:
+                f1.write('\n[重启]\n')
+        PROMPT += p_MEMORY + last_memory  # 使用最后一份记忆更新 PROMPT
+        print("遗留的长期记忆已载入。")
+    
     history = [{'role': 'user', 'content': PROMPT}]
     if silent == False: print("提示词加载完成。")
+    if export:
+        with open(cwd + "\\prompt.txt", "w", encoding="utf-8-sig") as f:
+            f.write(PROMPT)
+        if silent == False:
+            print("提示词已导出。")
+            exit()
 
     if silent == False: print('\nDeep Streaming Neural Network Interactive Prompt\n核心 Framework 版本 '+ver+' build '+str(BUILDNUM)+'\n')
     try:
-        print('实例节点编号: '+sys.argv[1])
-        agent_id = int(sys.argv[1])
+        if sys.argv[1] != 'backend':
+            print('实例节点编号: '+sys.argv[1])
+            agent_id = int(sys.argv[1])
+        else:
+            agent_id = 0
     except:
         if USE_LOCAL:
             pass
@@ -518,7 +588,12 @@ def init(silent=False):
         with open(cwd+'\\TEMP\\last_login.txt', 'r') as f: last_login = f.read(); f.close()
     except FileNotFoundError: last_login = 'Never'; f = open(cwd+'\\TEMP\\last_login.txt', 'w'); f.close()
     if silent == False and USE_LOCAL: print('WARNING: 目前本地模型的动作执行能力很差，有时无法完成一个动作，之后会改进。建议使用在线模型已获得更好的体验。')
-    print('上次登录：'+last_login+'\n')
+    if last_login == 'Never':
+        print('首次启动')
+        first_login = True
+        PROMPT += '\n请注意：这是一次全新的启动。你和我第一次开始交互。'
+    else:
+        print('上次登录：'+last_login+'\n')
     with open(cwd+'\\TEMP\\last_login.txt', 'w') as f: f.write(timestamp); f.close()
     
     try:
@@ -542,7 +617,7 @@ def init(silent=False):
                     response = send(chat, BEGINNING_PROMPT+SEARCH_ONLINE_PROMPT+ENDING_PROMPT)
                 elif agent_id == 4:
                     response = send(chat, BEGINNING_PROMPT+READ_FILE_PROMPT+ENDING_PROMPT)
-        print('初始化完毕。')
+        print('初始化完毕。使用[Ctrl+C]关闭实例。')
     except ConnectionError:
             print('[ Connection Error 请确保你的网络连接稳定。 ]')
             exit()
@@ -553,7 +628,7 @@ def init(silent=False):
             print('[ Connection Timeout 请检查网络连接后重试。 ]')
             exit()
     except google.api_core.exceptions.TooManyRequests:
-            print('[ Too Many Requests 请求频率过高，请稍后再试。 ]')
+            print('[ Too Many Requests 请求频率过高，请更换APIKEY或稍后再试。 ]')
             exit()
     except google.api_core.exceptions.InternalServerError:
             print('[ API Server Error 服务器内部错误，请重试。 ]')
@@ -589,7 +664,7 @@ if __name__ == "__main__":
                     
                     if USE_LOCAL:
                         history.append({"role": "user", "content": msg})
-                        response = send(chat,history)
+                        response = send(history)
                     else:
                         response = send(chat,msg)
                     

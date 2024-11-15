@@ -1,15 +1,19 @@
 
 # DSN utility functions
-# update 240830
+# update 241115
+
+print("INIT: DSN utility functions for Windows")
 
 from prompt import *
 try:
     from config import *
 except:
-    print("请先使用congif-ui.py设定配置，生成config.py，再启动程序。")
+    print("INIT: 请先使用congif-ui.py设定配置，生成config.py，再启动程序。")
     exit()
 
 import google.generativeai as genai
+from tqdm import tqdm
+import pywintypes
 import numpy as np
 import gradio as gr
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
@@ -17,9 +21,21 @@ from funasr import AutoModel
 from llama_cpp import Llama
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from PIL import Image
-import os,sys,requests,win32gui,win32api,psutil,cv2,pyaudio,google.api_core,time,wave,traceback,datetime,subprocess,re
+import os,sys,requests,win32gui,win32api,psutil,cv2,pyaudio,google.api_core,time,wave,traceback,subprocess,re
+from wxauto import *
+import datetime 
+
+# 以上导入勿删，存在间接引用
 
 splits = ["，", "。", "？", "！", ",", ".", "?", "!", "~", ":", "：", "—", "…"]
+
+try:
+    wx = WeChat()
+    wx.GetSessionList()
+    wechat_useable = True
+except pywintypes.error:
+    print("INIT: 未登录微信。部分功能将不可用。你需要在登录微信后重新启动DSN。")
+    wechat_useable = False
 
 def chattts(required_text):
     res = requests.post('http://127.0.0.1:9966/tts', data={
@@ -36,6 +52,28 @@ def chattts(required_text):
   "custom_voice": CHATTTS_SEED
 })
     return res
+
+# WeChat Controls are now moved to Dodo_cchat.py
+
+def list():
+    try:
+        return wx.GetAllFriends()
+    except pywintypes.error:
+        return 'ERROR: WeChat not logged in'
+
+def send_msg(msg, who):
+    try:
+        wx.SendMsg(msg, who)
+        return 'OK'
+    except pywintypes.error:
+        return 'ERROR: WeChat not logged in'
+
+def get_msg():
+    try:
+        msgs = wx.GetAllMessage(savepic=False)
+        return msgs
+    except pywintypes.error:
+        return 'ERROR: WeChat not logged in'
 
 def get_cursored_hwnd():
     cursor_point = win32api.GetCursorPos()  
@@ -58,7 +96,7 @@ def start_everything():
     try:
         subprocess.Popen(cwd+'\\binaries\\Everything.exe', shell=True)
     except FileNotFoundError:
-        print('未安装 Everything，请前往安装')
+        print('INIT: 未安装 Everything，请前往安装')
         exit()
 
 def start_chattts():
@@ -66,15 +104,21 @@ def start_chattts():
     try:
         subprocess.Popen('cmd /c start '+cwd+'\\instances\\chattts\\app.exe', shell=True)
     except FileNotFoundError:
-        print('未安装 ChatTTS，请前往安装')
+        print('INIT: 未安装 ChatTTS，请前往安装')
         exit()
 
 def start_tts():
     try:
         subprocess.Popen('cmd /c start '+TTS_PYTHON+' '+cwd+'\\instances\\DSN-vocal\\GPT_SoVITS\\DSN-Vocal-api.py -d "cuda" -s '+TTS_MODEL_PATH+'\\SoVITS_weights\\'+TTS_MODEL_NAME+'.pth -g '+TTS_MODEL_PATH+'\\GPT_weights\\'+TTS_MODEL_NAME+'.ckpt', shell=True)
     except FileNotFoundError:
-        print('未安装 DSN-vocal，请前往安装')
+        print('INIT: 未安装 DSN-vocal，请前往安装')
         exit()
+
+def remove_extra_newlines(text):
+    """
+    去掉字符串中多余的换行符，只保留一个换行符。
+    """
+    return re.sub(r"\n+", "\n", text).strip()
 
 def remove_extension(filename):
     if '.' in filename:
@@ -182,20 +226,41 @@ def extract_model_output(response_json):
     else:
         return []
 
-def beautify(text):
-    placeholder = "这个位置"
-    filepath_pattern = r"(?:\"(?:[a-zA-Z]:)?(?:/[\w\s\.\-]+)+\"|'(?:[a-zA-Z]:)?(?:/[\w\s\.\-]+)+'|(?:[a-zA-Z]:)?(?:/[\w\s\.\-]+)+|(?:[A-Za-z]:\\[\w\s\.\-\\]+)+)"
-    filepaths = re.findall(filepath_pattern, text)
-    replaced_text = re.sub(filepath_pattern, placeholder, text)
-    replaced_text = replaced_text.replace(USERNAME + '的', "你的")
-    replaced_text = replaced_text.replace(USERNAME + '，', "")
+def beautify_display(text):
+    replaced_text = text.replace(USERNAME + '，', "")
     replaced_text = replaced_text.replace(USERNAME, "")
+    replaced_text = replaced_text.replace("DSNN", "Dodo")
+    replaced_text = replaced_text.replace("DSN", "Dodo")
+    #replaced_text = replaced_text.replace("[CONTENT]", "")
     for i in range(len(splits)):
         replaced_text = replaced_text.replace(AI_NAME + splits[i], "")
     replaced_text = replaced_text.replace(AI_NAME, "")
     replaced_text = replaced_text.replace("**", "")
-    code_block_pattern = r"```.*?```"
-    replaced_text = re.sub(code_block_pattern, "", replaced_text, flags=re.DOTALL)
+    return replaced_text
+
+def beautify(text):
+    placeholder = "这个位置"
+    filepath_pattern = r"(?:\"(?:[a-zA-Z]:)?(?:/[\w\s\.\-]+)+\"|'(?:[a-zA-Z]:)?(?:/[\w\s\.\-]+)+'|(?:[a-zA-Z]:)?(?:/[\w\s\.\-]+)+|(?:[A-Za-z]:\\[\w\s\.\-\\]+)+)"
+    filepaths = re.findall(filepath_pattern, text)
+    
+    # 使用不包含句号的占位符替换文件路径
+    replaced_text = re.sub(filepath_pattern, placeholder, text)
+    
+    replaced_text = replaced_text.replace(USERNAME + '的', "你的")
+    replaced_text = replaced_text.replace(USERNAME + '，', "")
+    replaced_text = replaced_text.replace(USERNAME, "")
+    replaced_text = replaced_text.replace("DSNN", "Dodo")
+    replaced_text = replaced_text.replace("DSN", "Dodo")
+    #replaced_text = replaced_text.replace("[CONTENT]", "")
+    for i in range(len(splits)):
+        replaced_text = replaced_text.replace(AI_NAME + splits[i], "")
+    replaced_text = replaced_text.replace(AI_NAME, "")
+    replaced_text = replaced_text.replace("**", "")
+    
+    # 在删除代码块之前，将代码块中的句号替换成其他字符
+    code_block_pattern = r"```(.*?)```"
+    replaced_text = re.sub(code_block_pattern, lambda match: match.group(1).replace("。", " "), replaced_text, flags=re.DOTALL)
+    
     return replaced_text, filepaths
 
 def listen():
@@ -257,3 +322,5 @@ def listen():
     wf.writeframes(b''.join(frames))
     wf.close()
     return cwd+'\\TEMP\\latest_record.wav'
+
+print('INIT: SUCCESS WITH 0 CRITICAL ERRORS')
